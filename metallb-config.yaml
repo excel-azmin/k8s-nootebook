@@ -1,0 +1,16 @@
+# metallb-config.yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: nginx-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.10.250-192.168.10.254 # Use an IP range in your network
+
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: l2-advertisement
+  namespace: metallb-system

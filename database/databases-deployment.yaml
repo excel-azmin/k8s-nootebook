@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: databases-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: databases
+  template:
+    metadata:
+      labels:
+        app: databases
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:latest
+        ports:
+        - containerPort: 27017
+        env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+            value: "root"
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            value: "admin"
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
+
+      - name: mariadb
+        image: mariadb:latest
+        ports:
+        - containerPort: 3306
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "admin"
+        volumeMounts:
+        - name: mariadb-data
+          mountPath: /var/lib/mysql
+
+      - name: mssql
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        ports:
+        - containerPort: 1433
+        env:
+          - name: ACCEPT_EULA
+            value: "Y"
+          - name: SA_PASSWORD
+            value: "Mssql@Pass123"
+        volumeMounts:
+        - name: mssql-data
+          mountPath: /var/opt/mssql
+
+      - name: postgresql
+        image: postgres:latest
+        ports:
+        - containerPort: 5432
+        env:
+          - name: POSTGRES_USER
+            value: "postgres"
+          - name: POSTGRES_PASSWORD
+            value: "admin"
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+      
+      
+      volumes:  # This should be nested under spec.template.spec
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongo-pvc
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: mariadb-pvc
+        - name: mssql-data
+          persistentVolumeClaim:
+            claimName: mssql-pvc
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: postgresql-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: databases-service
+spec:
+  selector:
+    app: databases
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+      nodePort: 32017
+      name: mongodb-port
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+      nodePort: 32018
+      name: mariadb-port
+    - protocol: TCP
+      port: 1433
+      targetPort: 1433
+      nodePort: 32019
+      name: mssql-port
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+      nodePort: 32020
+      name: postgresql-port
+  type: NodePort
